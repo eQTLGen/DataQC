@@ -434,7 +434,7 @@ summary_table <- rbind(summary_table, temp_QC)
 
 # Remove samples not in GTE + 5k samples
 system(paste0(PLINK2, " --bfile ", bed_simplepath, " --fam fam_normalized.fam",
-" --output-chr 26 --keep SamplesToInclude.txt --geno 0.05 --make-bed --threads 4 --out ", bed_simplepath, "_filtered"))
+" --output-chr 26 --keep SamplesToInclude.txt --geno 0.05 --make-bed --threads 4 --sort-vars --out ", bed_simplepath, "_filtered"))
 
 # Do a first pass over variants to remove the bulk of highly missed variants
 # List the missingness per variant
