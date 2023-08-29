@@ -469,7 +469,7 @@ IterativeOutlierDetection <- function(
 
     it_round <- it_round + 1
 
-    if (it_round == 1){fwrite(and_p, "Debug_exp_mat_it1.txt", sep = "\t")}
+    if (it_round == 1){fwrite(as.data.frame(and_p), "Debug_exp_mat_it1.txt", sep = "\t")}
 
     pcs <- prcomp(t(and_p), center = FALSE, scale. = FALSE)
     message("PCA calculation finished!")
