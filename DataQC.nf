@@ -497,6 +497,8 @@ process GeneExpressionQC {
 
     tag {GeneExpressionQC}
 
+    publishDir "${params.outdir}/debug/", mode: 'copy', pattern: 'Debug_exp_mat_it1.txt', overwrite: true
+
     input:
       file exp_mat from expfile_ch
       file gte from gte_ch_exp
@@ -510,6 +512,7 @@ process GeneExpressionQC {
     output:
       path ('outputfolder_exp') into output_ch_geneexpression
       file 'SexCheck.txt' into sexcheck_to_report
+      file 'Debug_exp_mat_it1.txt' into debug_ch
 
     script:
       if (exp_platform == 'HT12v3')
