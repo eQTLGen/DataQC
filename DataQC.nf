@@ -601,7 +601,7 @@ process GeneExpressionQC {
       --platform ${exp_platform} \
       --contamination_slope ${contamination_slope} \
       --contamination_area ${contamination_area} \
-      --emp_probe_mapping $baseDir/data/HgncToEnsemblProbeMatching.txt \
+      --emp_probe_mapping $baseDir/data/HgncToEnsemblProbeMatchingKORA.txt \
       --output outputfolder_exp
       """
 }
