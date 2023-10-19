@@ -350,44 +350,44 @@ process WgsQC {
       """
 }
 
+if (params.gen_qc_steps == 'WGS') {
+    vcf_wgs_qced.map { chr, file -> file }.collect().set(to_concat_ch)
+} else {
+    vcf_normalised.map { chr, file -> file }.collect().set(to_concat_ch)
+}
+
+process ConcatVcf {
+
+    tag {ConcatVcf}
+
+    input:
+      path vcf_files from to_concat_ch
+      
+    output:
+      path "chrAll.vcf.gz" into vcf_concat_out_ch
+
+    script:
+      """
+      bcftools concat ${vcf_files.join(" ")} -o chrAll.vcf.gz
+      """
+}
+
 process VcfToPlink {
 
     tag {VcfToPlink}
 
     input:
-      tuple val(chr), file(vcf) from ( params.gen_qc_steps == 'WGS' ? vcf_wgs_qced : vcf_normalised )
+      path vcf_concat_out from vcf_concat_out_ch
 
     output:
-      file("${chr}_converted_vcf.bed") into vcf_to_plink_bed_ch
-      file("${chr}_converted_vcf.bim") into vcf_to_plink_bim_ch
-      file("${chr}_converted_vcf.fam") into vcf_to_plink_fam_ch
-      val("${chr}_converted_vcf") into vcf_to_plink_prefix_ch
-      set val(chr), val(1) into clean_wgs_norm_signal
-      set val(chr), val(1) into clean_wgs_qc_signal
+      tuple file("chrAll_converted_vcf.bed"), file("chrAll_converted_vcf.bim"), file("chrAll_converted_vcf.fam") into plink_merged
+      val 1 into clean_wgs_norm_signal
+      val 1 into clean_wgs_qc_signal
 
     script:
       """
       # Make plink file
-      plink2 --vcf ${vcf} --const-fid --split-x 'hg38' --make-bed --out "${chr}_converted_vcf"
-      """
-}
-
-process MergePlink {
-
-    tag {MergePlink}
-
-    input:
-      file(bed) from vcf_to_plink_bed_ch.collect()
-      file(bim) from vcf_to_plink_bim_ch.collect()
-      file(fam) from vcf_to_plink_fam_ch.collect()
-      file(mergelist) from vcf_to_plink_prefix_ch.collectFile(name: 'mergelist.txt', newLine: true)
-      
-    output:
-      tuple file("chrAll.bed"), file("chrAll.bim"), file("chrAll.fam") into plink_merged
-
-    script:
-      """
-      plink2 --merge-list ${mergelist} --make-bed --out "chrAll"
+      plink2 --vcf ${vcf_concat_out} --const-fid --split-x 'hg38' --make-bed --out "chrAll_converted_vcf"
       """
 }
 
@@ -401,11 +401,11 @@ process CleanSplitVcf {
 
     script:
     """
-    # clean_work_files.sh "${files_list[0]}"
+    clean_work_files.sh "${files_list[0]}"
     """
 }
 
-vcf_normalised_to_clean.mix(clean_wgs_norm_signal).groupTuple(size: 2).view().set { clean_wgs_norm_ready }
+vcf_normalised_to_clean.combine(clean_wgs_norm_signal).groupTuple(size: 2).view().set { clean_wgs_norm_ready }
 
 process CleanWgsNorm {
     tag {CleanWgsNorm}
@@ -415,11 +415,11 @@ process CleanWgsNorm {
 
     script:
     """
-    # clean_work_files.sh "${files_list[0]}"
+    clean_work_files.sh "${files_list[0]}"
     """
 }
 
-vcf_wgs_qced_to_clean.mix(clean_wgs_qc_signal).groupTuple(size: 2).view().set { clean_wgs_qc_ready }
+vcf_wgs_qced_to_clean.combine(clean_wgs_qc_signal).groupTuple(size: 2).view().set { clean_wgs_qc_ready }
 
 process CleanWgsQc {
     tag {CleanWgsQc}
@@ -429,7 +429,7 @@ process CleanWgsQc {
 
     script:
     """
-    # clean_work_files.sh "${files_list[0]}"
+    clean_work_files.sh "${files_list[0]}"
     """
 }
 
