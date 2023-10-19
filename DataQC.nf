@@ -604,7 +604,7 @@ process GeneExpressionQC {
       --emp_probe_mapping $baseDir/data/HgncToEnsemblProbeMatching.txt \
       --output outputfolder_exp
       """
-      else if (exp_platform == 'RNAseq_HGNC')
+      else if (exp_platform == 'RNAseq_ENTREZ')
       """
       Rscript --vanilla $baseDir/bin/ProcessExpression.R  \
       --expression_matrix ${exp_mat} \
