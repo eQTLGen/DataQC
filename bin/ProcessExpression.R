@@ -16,7 +16,7 @@ option_list <- list(
     make_option(c("-l", "--genotype_to_expression_linking"), type = "character",
     help = "Genotype-to-expression linking file. No header. First column- sample IDs in the genotype file, second column- corresponding sample IDs in the gene expression matrix."),
     make_option(c("-p", "--platform"), type = "character",
-    help = "Gene expression platform. This determines the normalization method and replaces probes with best-matching genes based on empirical probe mapping. One of: HT12v3, HT12v4, HuRef8, RNAseq, AffyU219, AffyHumanExon, RNAseq_HGNC."),
+    help = "Gene expression platform. This determines the normalization method and replaces probes with best-matching genes based on empirical probe mapping. One of: HT12v3, HT12v4, HuRef8, RNAseq, AffyU219, AffyHumanExon, RNAseq_HGNC, RNAseq_ENTREZ."),
     make_option(c("-m", "--emp_probe_mapping"), type = "character",
     help = "Empirical probe matching file. Used to link the best array probe to each blood-expressed gene."),
     make_option(c("-s", "--sd"), type = "double", default = 4,
@@ -138,7 +138,7 @@ illumina_array_preprocess <- function(exp, gte, gen, normalize = TRUE){
     return(exp_n)
 }
 
-RNAseq_preprocess <- function(exp, gte, gen, normalize = TRUE, gene_inclusion=NULL){
+RNAseq_preprocess <- function(exp, gte, gen, normalize = TRUE, gene_inclusion = NULL){
     colnames(exp)[1] <- "Probe"
 
     exp$Probe <- as.character(exp$Probe)
@@ -414,7 +414,7 @@ rnaseq_cpm_summary <- function(exp, gte){
 
 IterativeOutlierDetection <- function(
   input_exp, sd_threshold = 1,
-  platform = c("HT12v3", "HT12v4", "HuRef8", "RNAseq", "AffyU291", "AffyHuEx", "RNAseq_HGNC"),
+  platform = c("HT12v3", "HT12v4", "HuRef8", "RNAseq", "AffyU291", "AffyHuEx", "RNAseq_HGNC", "RNAseq_ENTREZ"),
   gene_inclusion = NULL) {
 
   and <- input_exp
@@ -844,7 +844,7 @@ if (nrow(and) < 100){stop("Less than 100 samples overlap with QCd genotype data!
 summary_table_temp <- data.table(Stage = "Samples which overlap with QCd genotype info", Nr_of_features = nrow(and), Nr_of_samples = ncol(and) - 1)
 summary_table <- rbind(summary_table, summary_table_temp)
 
-if (!args$platform %in% c("HT12v3", "HT12v4", "HuRef8", "RNAseq", "AffyU219", "AffyHumanExon", "RNAseq_HGNC")){stop("Platform has to be one of HT12v3, HT12v4, HuRef8, RNAseq, AffyU291, AffyHuEx, RNAseq_HGNC")}
+if (!args$platform %in% c("HT12v3", "HT12v4", "HuRef8", "RNAseq", "AffyU219", "AffyHumanExon", "RNAseq_HGNC", "RNAseq_ENTREZ")){stop("Platform has to be one of HT12v3, HT12v4, HuRef8, RNAseq, AffyU291, AffyHuEx, RNAseq_HGNC, RNAseq_ENTREZ")}
 
 iterative_outliers <- IterativeOutlierDetection(
   and, sd_threshold = args$sd, platform = args$platform)
@@ -863,7 +863,7 @@ if (args$platform %in% c("HT12v3", "HT12v4", "HuRef8")){
   and_p <- illumina_array_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
   and_p <- log2(and_p)
 }
-if (args$platform %in% c("RNAseq")){
+if (args$platform %in% c("RNAseq", "RNAseq_ENTREZ")){
   and_p <- RNAseq_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
   and_p <- log2(and_p + 0.25)
 }
@@ -933,7 +933,7 @@ summary_table <- expression_based_sample_swap_out$summary_table
 # Final re-process, re-calculate PCs, re-visualise and write out
 if (args$platform %in% c("HT12v3", "HT12v4", "HuRef8")){
   and_pp <- illumina_array_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
-} else if (args$platform %in% c("RNAseq")){
+} else if (args$platform %in% c("RNAseq", "RNAseq_ENTREZ")){
   gene_cpm_summary <- rnaseq_cpm_summary(and, args$genotype_to_expression_linking)
   fwrite(gene_cpm_summary, paste0(args$output, "/exp_data_summary/", "cpm_summary.txt"), sep = "\t", quote = FALSE, row.names = TRUE)
   and_pp <- RNAseq_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
@@ -1032,7 +1032,7 @@ and <- and[, colnames(and) %in% c("Feature", sample_non_outliers), with = FALSE]
 
 if (args$platform %in% c("HT12v3", "HT12v4", "HuRef8")){
 and_pp <- illumina_array_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, normalize = FALSE)
-} else if (args$platform %in% c("RNAseq")){
+} else if (args$platform %in% c("RNAseq", "RNAseq_ENTREZ")){
 and_pp <- RNAseq_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, normalize = FALSE)
 } else if (args$platform %in% c("RNAseq_HGNC")){
 and_pp <- RNAseq_HGNC_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, normalize = FALSE)
@@ -1049,7 +1049,7 @@ message("After normalization.")
 if (args$platform %in% c("HT12v3", "HT12v4", "HuRef8")){
 and_pp <- illumina_array_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, normalize = TRUE)
 and_pp <- log2(and_pp)
-} else if (args$platform %in% c("RNAseq")){
+} else if (args$platform %in% c("RNAseq", "RNAseq_ENTREZ")){
 and_pp <- RNAseq_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, normalize = TRUE)
 and_pp <- log2(and_pp + 0.25)
 } else if (args$platform %in% c("RNAseq_HGNC")){
