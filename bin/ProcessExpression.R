@@ -442,7 +442,7 @@ IterativeOutlierDetection <- function(
       #and_p <- t(and_p)
       #and_p <- apply(and_p, 1, center_data)
       #and_p <- t(and_p)
-    } else if(platform %in% c("RNAseq")){
+    } else if(platform %in% c("RNAseq", "RNAseq_ENTREZ")){
       and_p <- RNAseq_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples,
                                  gene_inclusion = gene_inclusion)
       and_p <- log2(and_p + 0.25)
@@ -552,7 +552,7 @@ ExpressionBasedSampleSwapIdentification <- function(and, summary_table) {
   # Final re-process, re-calculate PCs, re-visualise and write out
   if (args$platform %in% c("HT12v3", "HT12v4", "HuRef8")){
     and_pp <- illumina_array_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
-  } else if (args$platform %in% c("RNAseq")){
+  } else if (args$platform %in% c("RNAseq", "RNAseq_ENTREZ")){
     and_pp <- RNAseq_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, gene_inclusion = sex_specific_genes)
   } else if (args$platform %in% c("RNAseq_HGNC")){
     and_pp <- RNAseq_HGNC_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, gene_inclusion = sex_specific_genes)
