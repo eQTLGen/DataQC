@@ -335,6 +335,87 @@ RNAseq_HGNC_preprocess <- function(exp, gte, gen, normalize = TRUE, gene_inclusi
     return(exp_n)
 }
 
+RNAseq_ENTREZ_preprocess <- function(exp, gte, gen, normalize = TRUE, gene_inclusion = NULL){
+
+      # Leave in only probes for which there is empirical probe mapping info and convert data into matrix
+    emp <- fread(args$emp_probe_mapping, keepLeadingZeros = TRUE)
+    emp <- emp[, c(1, 2), with = FALSE]
+    colnames(exp)[1] <- "Probe"
+
+    exp$Probe <- as.character(exp$Probe)
+    emp$Probe <- as.character(emp$Probe)
+
+    exp <- merge(exp, emp, by = "Probe")
+    exp <- as.data.frame(exp)
+    rownames(exp) <- exp[, ncol(exp)]
+    exp <- exp[, -ncol(exp)]
+    exp <- exp[, -1]
+    exp <- abs(as.matrix(exp))
+
+    # Remove samples which are not in the gte or in genotype data
+    gte <- fread(args$genotype_to_expression_linking, header = FALSE, colClasses = "character")
+    gte$V1 <- as.character(gte$V1)
+    gte$V2 <- as.character(gte$V2)
+
+    geno_fam <- fread(args$sex_info, header = TRUE, keepLeadingZeros = TRUE, colClasses = list(character = c(1,2)))
+    gte <- gte[gte$V1 %in% geno_fam$IID,]
+    gte <- gte[gte$V2 %in% as.character(colnames(exp)),]
+
+    message(paste(nrow(gte), "overlapping samples in the gte file AND genotype data."))
+
+    exp <- exp[, colnames(exp) %in% gte$V2]
+    exp <- exp[, base::order(colnames(exp))]
+    gte <- gte[base::order(gte$V2), ]
+
+    if(!all(colnames(exp) == gte$V2)){stop("Something went wrong in matching genotype and expression IDs. Please debug!")}
+
+    colnames(exp) <- gte$V1
+
+    # Remove genes with no variance
+    gene_variance <- data.frame(gene = rownames(exp), gene_variance = apply(exp, 1, var))
+    exp <- exp[!rownames(exp) %in% gene_variance[gene_variance$gene_variance == 0, ]$gene, ]
+
+    # Remove genes with CPM>0.5 in less than 1% of samples
+    exp_keep <- DGEList(counts = exp)
+    n_samples_with_cpm_threshold_passed <- rowSums(cpm(exp_keep, log = FALSE) > 0.5)
+    keep <- n_samples_with_cpm_threshold_passed >= round(ncol(exp) / 100, 0)
+
+    message(paste(sum(keep), "genes has CPM>0.5 in at least 1% of samples."))
+
+    if (all(!is.null(gene_inclusion)) && length(gene_inclusion) > 0) {
+      missed_genes <- gene_inclusion[(gene_inclusion %in% names(keep[keep == FALSE]))]
+
+      if (length(missed_genes) > 0) {
+        warning(sprintf(
+          "Including %d genes that do not pass cpm cutoff. printing number of samples passing cpm cutoff below.",
+          length(missed_genes)))
+
+        print(n_samples_with_cpm_threshold_passed[missed_genes])
+
+      }
+      keep[missed_genes] <- TRUE
+    }
+
+    exp <- exp[rownames(exp) %in% names(keep[keep == TRUE]), ]
+
+    message(sprintf("Total number of genes that are included: %d", nrow(exp)))
+
+    if (normalize == TRUE){
+    # TMM-normalized counts
+    exp_n <- DGEList(counts = exp)
+    exp_n <- calcNormFactors(exp_n, method = "TMM")
+    exp_n <- cpm(exp_n, log = FALSE)
+    }else{exp_n <- exp}
+
+    # log2 transformation (+ add 0.25 for solving issues with log2(0)) (not needed because INT will be applied)
+    # and_n <- log2(and_n + 0.25)
+    message(paste(ncol(exp_n), "samples in normalised expression matrix."))
+
+    return(exp_n)
+}
+
+
+
 exp_summary <- function(x){
 
     per_gene_mean <- apply(x, 1, mean)
@@ -442,7 +523,7 @@ IterativeOutlierDetection <- function(
       #and_p <- t(and_p)
       #and_p <- apply(and_p, 1, center_data)
       #and_p <- t(and_p)
-    } else if(platform %in% c("RNAseq", "RNAseq_ENTREZ")){
+    } else if(platform %in% c("RNAseq")){
       and_p <- RNAseq_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples,
                                  gene_inclusion = gene_inclusion)
       and_p <- log2(and_p + 0.25)
@@ -452,6 +533,14 @@ IterativeOutlierDetection <- function(
       #and_p <- t(and_p)
     } else if(platform %in% c("RNAseq_HGNC")){
       and_p <- RNAseq_HGNC_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples,
+                                 gene_inclusion = gene_inclusion)
+      and_p <- log2(and_p + 0.25)
+      #and_p <- apply(and_p, 1, INT_transform)
+      #and_p <- t(and_p)
+      #and_p <- apply(and_p, 1, center_data)
+      #and_p <- t(and_p)
+    } else if(platform %in% c("RNAseq_ENTREZ")){
+      and_p <- RNAseq_ENTREZ_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples,
                                  gene_inclusion = gene_inclusion)
       and_p <- log2(and_p + 0.25)
       #and_p <- apply(and_p, 1, INT_transform)
@@ -552,10 +641,12 @@ ExpressionBasedSampleSwapIdentification <- function(and, summary_table) {
   # Final re-process, re-calculate PCs, re-visualise and write out
   if (args$platform %in% c("HT12v3", "HT12v4", "HuRef8")){
     and_pp <- illumina_array_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
-  } else if (args$platform %in% c("RNAseq", "RNAseq_ENTREZ")){
+  } else if (args$platform %in% c("RNAseq")){
     and_pp <- RNAseq_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, gene_inclusion = sex_specific_genes)
   } else if (args$platform %in% c("RNAseq_HGNC")){
     and_pp <- RNAseq_HGNC_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, gene_inclusion = sex_specific_genes)
+  } else if (args$platform %in% c("RNAseq_ENTREZ")){
+    and_pp <- RNAseq_ENTREZ_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, gene_inclusion = sex_specific_genes)
   } else if (args$platform %in% c("AffyU219", "AffyHumanExon")){
     and_pp <- Affy_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
   }
@@ -863,12 +954,16 @@ if (args$platform %in% c("HT12v3", "HT12v4", "HuRef8")){
   and_p <- illumina_array_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
   and_p <- log2(and_p)
 }
-if (args$platform %in% c("RNAseq", "RNAseq_ENTREZ")){
+if (args$platform %in% c("RNAseq")){
   and_p <- RNAseq_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
   and_p <- log2(and_p + 0.25)
 }
 if (args$platform %in% c("RNAseq_HGNC")){
   and_p <- RNAseq_HGNC_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
+  and_p <- log2(and_p + 0.25)
+}
+if (args$platform %in% c("RNAseq_ENTREZ")){
+  and_p <- RNAseq_ENTREZ_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
   and_p <- log2(and_p + 0.25)
 }
 if (args$platform %in% c("AffyU219", "AffyHumanExon")){
@@ -933,7 +1028,7 @@ summary_table <- expression_based_sample_swap_out$summary_table
 # Final re-process, re-calculate PCs, re-visualise and write out
 if (args$platform %in% c("HT12v3", "HT12v4", "HuRef8")){
   and_pp <- illumina_array_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
-} else if (args$platform %in% c("RNAseq", "RNAseq_ENTREZ")){
+} else if (args$platform %in% c("RNAseq")){
   gene_cpm_summary <- rnaseq_cpm_summary(and, args$genotype_to_expression_linking)
   fwrite(gene_cpm_summary, paste0(args$output, "/exp_data_summary/", "cpm_summary.txt"), sep = "\t", quote = FALSE, row.names = TRUE)
   and_pp <- RNAseq_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
@@ -941,6 +1036,10 @@ if (args$platform %in% c("HT12v3", "HT12v4", "HuRef8")){
   gene_cpm_summary <- rnaseq_cpm_summary(and, args$genotype_to_expression_linking)
   fwrite(gene_cpm_summary, paste0(args$output, "/exp_data_summary/", "cpm_summary.txt"), sep = "\t", quote = FALSE, row.names = TRUE)
   and_pp <- RNAseq_HGNC_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
+} else if (args$platform %in% c("RNAseq_ENTREZ")){
+  gene_cpm_summary <- rnaseq_cpm_summary(and, args$genotype_to_expression_linking)
+  fwrite(gene_cpm_summary, paste0(args$output, "/exp_data_summary/", "cpm_summary.txt"), sep = "\t", quote = FALSE, row.names = TRUE)
+  and_pp <- RNAseq_ENTREZ_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
 } else if (args$platform %in% c("AffyU219", "AffyHumanExon")){
   and_pp <- Affy_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
 }
@@ -1032,10 +1131,12 @@ and <- and[, colnames(and) %in% c("Feature", sample_non_outliers), with = FALSE]
 
 if (args$platform %in% c("HT12v3", "HT12v4", "HuRef8")){
 and_pp <- illumina_array_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, normalize = FALSE)
-} else if (args$platform %in% c("RNAseq", "RNAseq_ENTREZ")){
+} else if (args$platform %in% c("RNAseq")){
 and_pp <- RNAseq_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, normalize = FALSE)
 } else if (args$platform %in% c("RNAseq_HGNC")){
 and_pp <- RNAseq_HGNC_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, normalize = FALSE)
+} else if (args$platform %in% c("RNAseq_ENTREZ")){
+and_pp <- RNAseq_ENTREZ_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, normalize = FALSE)
 } else if (args$platform %in% c("AffyU219", "AffyHumanExon")){
 and_pp <- Affy_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
 }
@@ -1049,11 +1150,14 @@ message("After normalization.")
 if (args$platform %in% c("HT12v3", "HT12v4", "HuRef8")){
 and_pp <- illumina_array_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, normalize = TRUE)
 and_pp <- log2(and_pp)
-} else if (args$platform %in% c("RNAseq", "RNAseq_ENTREZ")){
+} else if (args$platform %in% c("RNAseq")){
 and_pp <- RNAseq_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, normalize = TRUE)
 and_pp <- log2(and_pp + 0.25)
 } else if (args$platform %in% c("RNAseq_HGNC")){
 and_pp <- RNAseq_HGNC_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, normalize = TRUE)
+and_pp <- log2(and_pp + 0.25)
+} else if (args$platform %in% c("RNAseq_ENTREZ")){
+and_pp <- RNAseq_ENTREZ_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples, normalize = TRUE)
 and_pp <- log2(and_pp + 0.25)
 } else if (args$platform %in% c("AffyU291", "AffyHuEx")){
 and_pp <- Affy_preprocess(and, args$genotype_to_expression_linking, args$genotype_samples)
