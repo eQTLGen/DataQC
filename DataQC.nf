@@ -257,13 +257,13 @@ process SplitVcf {
     tag {SplitVcf}
 
     input:
-      file(input_vcf) from vcffile_ch2.collect()
-      file(index_file) from input_vcf_all_index.collect()
+      path input_vcf from vcffile_ch2.collect()
+      path index_file from input_vcf_all_index.collect()
       val(chr) from chromosome_channel
 
     output:
-      tuple val(chr), file("split_${chr}.vcf.gz") into split_vcf
-      tuple val(chr), file("split_${chr}.vcf.gz") into split_vcf_to_clean
+      tuple val(chr), path("split_${chr}.vcf.gz") into split_vcf
+      tuple val(chr), path("split_${chr}.vcf.gz") into split_vcf_to_clean
 
     script:
       """
@@ -299,9 +299,9 @@ process WgsNorm {
       tuple val(chr), file(input_vcf) from ( vcf_contig_count.value == 1 ? split_vcf : ext_vcf_ch )
 
     output:
-      tuple val(chr), file("norm.vcf.gz") into vcf_normalised
-      tuple val(chr), file("norm.vcf.gz") into vcf_normalised_to_clean
-      set val(chr), val(1) into clean_split_vcf_signal
+      tuple val(chr), path("norm.vcf.gz") into vcf_normalised
+      tuple val(chr), path("norm.vcf.gz") into vcf_normalised_to_clean
+      tuple val(chr), val(1) into clean_split_vcf_signal
 
     script:
       """
@@ -350,18 +350,15 @@ process WgsQC {
       """
 }
 
-if (params.gen_qc_steps == 'WGS') {
-    vcf_wgs_qced.map { chr, file -> file }.collect().set(to_concat_ch)
-} else {
-    vcf_normalised.map { chr, file -> file }.collect().set(to_concat_ch)
-}
+// WGS
+(params.gen_qc_steps == 'WGS' ? vcf_wgs_qced : vcf_normalised).map { chr, file -> file }.collect().set { to_concat_ch }
 
 process ConcatVcf {
 
     tag {ConcatVcf}
 
     input:
-      path vcf_files from to_concat_ch
+      path(vcf_files, stageAs: "vcf_to_concatenate_*.vcf.gz") from to_concat_ch
       
     output:
       path "chrAll.vcf.gz" into vcf_concat_out_ch
@@ -401,11 +398,11 @@ process CleanSplitVcf {
 
     script:
     """
-    clean_work_files.sh "${files_list[0]}"
+    clean_work_files.sh "${files_list}"
     """
 }
 
-vcf_normalised_to_clean.combine(clean_wgs_norm_signal).groupTuple(size: 2).view().set { clean_wgs_norm_ready }
+clean_wgs_norm_signal.combine(vcf_normalised_to_clean).groupTuple(size: 2).view().set { clean_wgs_norm_ready }
 
 process CleanWgsNorm {
     tag {CleanWgsNorm}
@@ -415,7 +412,7 @@ process CleanWgsNorm {
 
     script:
     """
-    clean_work_files.sh "${files_list[0]}"
+    clean_work_files.sh "${files_list}"
     """
 }
 
@@ -429,7 +426,7 @@ process CleanWgsQc {
 
     script:
     """
-    clean_work_files.sh "${files_list[0]}"
+    clean_work_files.sh "${files_list}"
     """
 }
 
