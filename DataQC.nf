@@ -328,15 +328,24 @@ process WgsQC {
       params.gen_qc_steps == 'WGS'
 
     script:
-      if (chr in ["X", "Y", "chrX", "chrY"]) 
+      // TODO (LOW) start by fixing missingness of male x-chromosome genotypes
+      // TODO (LOW,continued) then, perform bcftools +guess-ploidy (Only if this performs well! In addition, perhaps confine to a list of uncorrelated, non-pseudoautosomal, SNPs)
+      // TODO (LOW,continued) include outcome in custom_vcf_filter.py
+      // TODO (LOW,continued) then, on filtered variants, apply same fix to missingness of male x-chromosome genotypes
+      // Explanation: This is better than rewriting the user-supplied .fam file with sex information since it makes sure that mismatched samples or mismatched reported sex do not bias the custom vcf filter.
+      // Explanation: This is better as it is now, since the custom_vcf_filter is able to do its job better (with appropriate cut-off values).
+      // However, it should not affect things here too much as the genotypes of x-chromosomes are merely used for sex-check at this point.
+      if (chr in ["X", "Y", "chrX", "chrY", "23"])
       """
-      python3 $baseDir/bin/custom_vcf_filter.py --input ${input_vcf} --hardy_weinberg_equilibrium 0 --output norm \
+      python3 $baseDir/bin/custom_vcf_filter.py --input ${input_vcf} --hardy_weinberg_equilibrium 0 --call_rate 0.2 --output _norm \
       | tee custom_vcf_filter.log
-      
+
       python3 $baseDir/bin/print_WGS_VCF_filter_overview.py \
         --workdir . --chr ${chr} \
-        --vcf_file_format "norm.vcf.gz"
-      
+        --vcf_file_format "_norm.vcf.gz"
+
+      bcftools +setGT _norm-filtered.vcf.gz -- -t q -i 'GT="0/."|GT="./0"|GT="0|."|GT=".|0"' -n c:'0/0' \
+      | bcftools +setGT -- -t q -i 'GT="0/."|GT="./0"|GT="0|."|GT=".|0"' -n c:'0/0' > norm-filtered.vcf.gz
       """
       else
       """
