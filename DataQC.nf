@@ -338,7 +338,7 @@ process WgsQC {
       if (chr in ["X", "Y", "chrX", "chrY", "23"])
       """
       bcftools +setGT ${input_vcf} -- -t q -i 'GT="0/."|GT="./0"|GT="0|."|GT=".|0"' -n c:'0/0' \
-      | bcftools +setGT -- -t q -i 'GT="0/."|GT="./0"|GT="0|."|GT=".|0"' -n c:'0/0' -Oz -o fixed_partial_missingness.vcf.gz
+      | bcftools +setGT -Oz -o fixed_partial_missingness.vcf.gz -- -t q -i 'GT="0/."|GT="./0"|GT="0|."|GT=".|0"' -n c:'0/0'
 
       python3 $baseDir/bin/custom_vcf_filter.py --input fixed_partial_missingness.vcf.gz --hardy_weinberg_equilibrium 0 --call_rate 0.5 --output norm \
       | tee custom_vcf_filter.log
