@@ -337,15 +337,15 @@ process WgsQC {
       // However, it should not affect things here too much as the genotypes of x-chromosomes are merely used for sex-check at this point.
       if (chr in ["X", "Y", "chrX", "chrY", "23"])
       """
-      python3 $baseDir/bin/custom_vcf_filter.py --input ${input_vcf} --hardy_weinberg_equilibrium 0 --call_rate 0.2 --output _norm \
+      bcftools +setGT ${input_vcf} -- -t q -i 'GT="0/."|GT="./0"|GT="0|."|GT=".|0"' -n c:'0/0' \
+      | bcftools +setGT -- -t q -i 'GT="0/."|GT="./0"|GT="0|."|GT=".|0"' -n c:'0/0' -Oz -o fixed_partial_missingness.vcf.gz
+
+      python3 $baseDir/bin/custom_vcf_filter.py --input fixed_partial_missingness.vcf.gz --hardy_weinberg_equilibrium 0 --call_rate 0.5 --output norm \
       | tee custom_vcf_filter.log
 
       python3 $baseDir/bin/print_WGS_VCF_filter_overview.py \
         --workdir . --chr ${chr} \
-        --vcf_file_format "_norm.vcf.gz"
-
-      bcftools +setGT _norm-filtered.vcf.gz -- -t q -i 'GT="0/."|GT="./0"|GT="0|."|GT=".|0"' -n c:'0/0' \
-      | bcftools +setGT -- -t q -i 'GT="0/."|GT="./0"|GT="0|."|GT=".|0"' -n c:'0/0' > norm-filtered.vcf.gz
+        --vcf_file_format "norm.vcf.gz"
       """
       else
       """
