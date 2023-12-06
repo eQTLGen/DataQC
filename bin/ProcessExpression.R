@@ -645,6 +645,8 @@ ExpressionBasedSampleSwapIdentification <- function(and, summary_table) {
       TRUE ~ "Passed"
     )
 
+    fwrite(y_genes[,c("y_genes", "xist_corrected")], "7_xist_y_genes_debug_table.txt", sep="\t", quote=F, col.names=T, row.names=F)
+
     y_genes_zoom <- max(y_genes %>% ungroup() %>%
       filter(contaminated == "yes" | mismatch == "yes") %>%
       summarise(max_y = max(y_genes), max_x = max(xist)))
