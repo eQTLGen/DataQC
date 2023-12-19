@@ -564,11 +564,12 @@ ExpressionBasedSampleSwapIdentification <- function(and, summary_table) {
   y_genes <- emp_probe_mapping[emp_probe_mapping$chromosome_name == "Y", ]$Ensembl
   y_genes <- and_pp[rownames(and_pp) %in% y_genes, ]
 
-  fwrite(xist, "7_debug_xist_genes.txt")
-  fwrite(y_genes, "7_debug_y_chr_genes.txt")
-  message(paste("Nr. of Y genes:", nr_of_y_genes))
+  fwrite(list(xist), "7_debug_xist_genes.txt")
+  fwrite(list(y_genes), "7_debug_y_chr_genes.txt")
 
   nr_of_y_genes <- nrow(y_genes)
+
+  message(paste("Nr. of Y genes:", nr_of_y_genes))
 
   if (nrow(y_genes) > 0){
 
