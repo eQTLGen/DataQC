@@ -695,7 +695,7 @@ ExpressionBasedSampleSwapIdentification <- function(and, summary_table) {
                            "Contaminated and\nsex mismatch" = "darkmagenta"),
                          0.5),
           name = "Passed checks") +
-        coord_cartesian(ylim = c(0, y_genes_zoom), xlim = c(0, y_genes_zoom)) +
+        coord_cartesian(ylim = c(0, y_max), xlim = c(0, x_max)) +
         theme_bw() + ylab(paste0("mean of Y genes - min(mean of Y genes)\n(n=", nr_of_y_genes, ")")) + xlab("XIST - min(XIST)")
 
       ggsave(paste0(args$output, "/exp_plots/SexSpecificGenesXIST_zoomed.png"), height = 5, width = 7, units = "in", dpi = 300, type = "cairo")
@@ -730,7 +730,7 @@ ExpressionBasedSampleSwapIdentification <- function(and, summary_table) {
                            "Contaminated and\nsex mismatch" = "darkmagenta"),
                          0.5),
           name = "Passed checks") +
-        coord_cartesian(ylim = c(0, y_genes_zoom), xlim = c(0, y_genes_zoom)) +
+        coord_cartesian(ylim = c(0, y_max), xlim = c(0, x_max)) +
         theme_bw() + ylab(paste0("mean of Y genes - min(mean of Y genes)\n(n=", nr_of_y_genes, ")")) + xlab("XIST - min(XIST)")
 
       ggsave(paste0(args$output, "/exp_plots/SexSpecificGenes_zoomed.png"), height = 5, width = 7, units = "in", dpi = 300, type = "cairo")
