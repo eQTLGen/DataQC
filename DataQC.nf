@@ -253,7 +253,7 @@ process ListChromosomes {
 vcf_chromosome_list_file.splitText().map{ line -> line.trim() }.view().set { chromosome_channel }
 
 process SplitVcf {
-
+    cache 'lenient'
     tag {SplitVcf}
 
     input:
@@ -292,7 +292,7 @@ process ExpandVcfChannel {
 }
 
 process WgsNorm {
-
+    cache 'lenient'
     tag {WgsNorm}
 
     input:
@@ -311,7 +311,7 @@ process WgsNorm {
 }
 
 process WgsQC {
-
+    cache 'lenient'
     tag {WgsQC}
 
     input:
@@ -401,6 +401,7 @@ split_vcf_to_clean.mix(clean_split_vcf_signal).groupTuple(size: 2).view().set {c
 
 process CleanSplitVcf {
     tag {CleanSplitVcf}
+    executor "local"
 
     input:
         set val(chr), val(files_list) from clean_split_vcf_ready
@@ -415,6 +416,7 @@ clean_wgs_norm_signal.combine(vcf_normalised_to_clean).groupTuple(size: 2).view(
 
 process CleanWgsNorm {
     tag {CleanWgsNorm}
+    executor "local"
 
     input:
         set val(chr), val(files_list) from clean_wgs_norm_ready
@@ -429,6 +431,7 @@ vcf_wgs_qced_to_clean.combine(clean_wgs_qc_signal).groupTuple(size: 2).view().se
 
 process CleanWgsQc {
     tag {CleanWgsQc}
+    executor "local"
 
     input:
         set val(chr), val(files_list) from clean_wgs_qc_ready
