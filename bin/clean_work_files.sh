@@ -27,10 +27,10 @@ for file in ${files_list}; do
     echo $mtime
 
     # Make the file size 0 and set as a sparse file
-    #> $file
-    #truncate -s $size $file
+    > $file
+    truncate -s $size $file
     # Reset the timestamps on the file
-    #touch -a -d @$atime $file
-    #touch -m -d @$mtime $file
+    touch -a -d @$atime $file
+    touch -m -d @$mtime $file
   fi
 done

@@ -293,7 +293,7 @@ process ExpandVcfChannel {
 
 process WgsNorm {
     cache 'lenient'
-    tag {WgsNorm}
+    tag "$chr"
 
     input:
       tuple val(chr), file(input_vcf) from ( vcf_contig_count.value == 1 ? split_vcf : ext_vcf_ch )
@@ -312,7 +312,8 @@ process WgsNorm {
 
 process WgsQC {
     cache 'lenient'
-    tag {WgsQC}
+    tag "$chr"
+    container 'quay.io/cawarmerdam/eqtlgen_wgs_qc:v0.1'
 
     input:
       tuple val(chr), file(input_vcf) from ( params.gen_qc_steps == 'WGS' ? vcf_normalised : Channel.empty() )
@@ -346,7 +347,7 @@ process WgsQC {
 
       python3 $baseDir/bin/print_WGS_VCF_filter_overview.py \
         --workdir . --chr ${chr} \
-        --vcf_file_format "norm.vcf.gz"
+        --vcf_file_format "fixed_partial_missingness.vcf.gz"
       """
       else
       """
