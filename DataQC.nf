@@ -340,7 +340,8 @@ process WgsQC {
       bcftools +setGT ${input_vcf} -- -t q -i 'GT="0/."|GT="./0"|GT="0|."|GT=".|0"' -n c:'0/0' \
       | bcftools +setGT -Oz -o fixed_partial_missingness.vcf.gz -- -t q -i 'GT="1/."|GT="./1"|GT="1|."|GT=".|1"' -n c:'1/1'
 
-      python3 $baseDir/bin/custom_vcf_filter.py --input fixed_partial_missingness.vcf.gz --hardy_weinberg_equilibrium 0 --call_rate 0.5 --output norm \
+      python3 $baseDir/bin/custom_vcf_filter.py --input fixed_partial_missingness.vcf.gz \
+      --hardy_weinberg_equilibrium 0 --call_rate 0.5 --output norm \
       | tee custom_vcf_filter.log
 
       python3 $baseDir/bin/print_WGS_VCF_filter_overview.py \
