@@ -347,7 +347,7 @@ process WgsQC {
 
       python3 $baseDir/bin/print_WGS_VCF_filter_overview.py \
         --workdir . --chr ${chr} \
-        --vcf_file_format "fixed_partial_missingness.vcf.gz"
+        --vcf_file_format "norm.vcf.gz"
       """
       else
       """
