@@ -338,8 +338,8 @@ process WgsQC {
       // However, it should not affect things here too much as the genotypes of x-chromosomes are merely used for sex-check at this point.
       if (chr in ["X", "Y", "chrX", "chrY", "23"])
       """
-      bcftools +setGT ${input_vcf} -- -t q -i 'GT="0/."|GT="./0"|GT="0|."|GT=".|0"' -n c:'0/0' \
-      | bcftools +setGT -Oz -o fixed_partial_missingness.vcf.gz -- -t q -i 'GT="1/."|GT="./1"|GT="1|."|GT=".|1"' -n c:'1/1'
+      bcftools +setGT ${input_vcf} -- -t q -i 'GT="0"|GT="0/."|GT="./0"|GT="0|."|GT=".|0"' -n c:'0/0' \
+      | bcftools +setGT -Oz -o fixed_partial_missingness.vcf.gz -- -t q -i 'GT="1"|GT="1/."|GT="./1"|GT="1|."|GT=".|1"' -n c:'1/1'
 
       python3 $baseDir/bin/custom_vcf_filter.py --input fixed_partial_missingness.vcf.gz \
       --hardy_weinberg_equilibrium 0 --call_rate 0.5 --output norm \
