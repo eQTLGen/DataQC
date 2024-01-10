@@ -321,7 +321,7 @@ process WgsQC {
 
     input:
       tuple val(chr), file(input_vcf) from ( params.gen_qc_steps == 'WGS' ? vcf_normalised : Channel.empty() )
-      path(fam) from ( params.fam != '' ? ploidy_guess_fam_ch : Channel.empty() )
+      path fam from ( params.fam != '' ? ploidy_guess_fam_ch : Channel.empty() )
 
     output:
       tuple val(chr), file("norm-filtered.vcf.gz") into vcf_wgs_qced
@@ -353,7 +353,7 @@ process WgsQC {
         --vcf_file_format "norm.vcf.gz"
 
         '''
-      if else (chr in ["X", "Y", "chrX", "chrY", "23", "24"])
+      else if (chr in ["X", "Y", "chrX", "chrY", "23", "24"])
         '''
         python3 !baseDir/bin/custom_vcf_filter.py --input !{input_vcf} \
         --output norm --hardy_weinberg_equilibrium 0 \
