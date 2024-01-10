@@ -321,7 +321,7 @@ process WgsQC {
 
     input:
       tuple val(chr), file(input_vcf) from ( params.gen_qc_steps == 'WGS' ? vcf_normalised : Channel.empty() )
-      path(fam) from from ( params.fam != '' ? ploidy_guess_fam_ch : Channel.empty() )
+      path(fam) from ( params.fam != '' ? ploidy_guess_fam_ch : Channel.empty() )
 
     output:
       tuple val(chr), file("norm-filtered.vcf.gz") into vcf_wgs_qced
