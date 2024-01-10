@@ -333,7 +333,7 @@ process WgsQC {
     when:
       params.gen_qc_steps == 'WGS'
 
-    script:
+    shell:
       // TODO (LOW) start by fixing missingness of male x-chromosome genotypes
       // TODO (LOW,continued) then, perform bcftools +guess-ploidy (Only if this performs well! In addition, perhaps confine to a list of uncorrelated, non-pseudoautosomal, SNPs)
       // TODO (LOW,continued) include outcome in custom_vcf_filter.py
@@ -342,8 +342,8 @@ process WgsQC {
       // Explanation: This is better as it is now, since the custom_vcf_filter is able to do its job better (with appropriate cut-off values).
       // However, it should not affect things here too much as the genotypes of x-chromosomes are merely used for sex-check at this point.
       if (chr in ["X", "Y", "chrX", "chrY", "23", "24"] & params.fam != '')
-        """
-        python3 $baseDir/bin/custom_vcf_filter.py --input ${input_vcf} --output norm \
+        '''
+        python3 !baseDir/bin/custom_vcf_filter.py --input !{input_vcf} --output norm \
         | tee custom_vcf_filter.log
 
         awk 'BEGIN{FS=" "; OFS=","}{ gsub("1", "M", $5) ; gsub("2", "F", $5); print $1,$5}' > "sex_file.txt"
@@ -352,27 +352,27 @@ process WgsQC {
         --workdir . --chr !{chr} --sex "sex_file.txt" \
         --vcf_file_format "norm.vcf.gz"
 
-        """
+        '''
       if else (chr in ["X", "Y", "chrX", "chrY", "23", "24"])
-        """
-        python3 $baseDir/bin/custom_vcf_filter.py --input fixed_partial_missingness.vcf.gz \
+        '''
+        python3 !baseDir/bin/custom_vcf_filter.py --input !{input_vcf} \
         --output norm --hardy_weinberg_equilibrium 0 \
         | tee custom_vcf_filter.log
 
-        python3 $baseDir/bin/print_WGS_VCF_filter_overview.py \
-          --workdir . --chr ${chr} \
+        python3 !baseDir/bin/print_WGS_VCF_filter_overview.py \
+          --workdir . --chr !{chr} \
           --vcf_file_format "norm.vcf.gz"
-        """
+        '''
       else
-        """
-        python3 $baseDir/bin/custom_vcf_filter.py --input ${input_vcf} --output norm \
+        '''
+        python3 !baseDir/bin/custom_vcf_filter.py --input !{input_vcf} --output norm \
         | tee custom_vcf_filter.log
 
-        python3 $baseDir/bin/print_WGS_VCF_filter_overview.py \
-        --workdir . --chr ${chr} \
+        python3 !baseDir/bin/print_WGS_VCF_filter_overview.py \
+        --workdir . --chr !{chr} \
         --vcf_file_format "norm.vcf.gz"
 
-        """
+        '''
 }
 
 // WGS
