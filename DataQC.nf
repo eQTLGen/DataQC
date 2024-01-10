@@ -100,6 +100,10 @@ if (params.fam != '') {
     .fromPath(params.fam, checkIfExists: true)
     .set { fam_annot_ch }
 
+  Channel
+    .fromPath(params.fam, checkIfExists: true)
+    .set { ploidy_guess_fam_ch }
+
 } else {
 
   Channel.empty()
@@ -245,7 +249,7 @@ process ListChromosomes {
 
     script:
       """
-      bcftools index ${input_vcf}
+      bcftools index --threads $task.cpus ${input_vcf}
       tabix -l ${input_vcf} > "chromosomes.txt"
       """
 }
@@ -317,6 +321,7 @@ process WgsQC {
 
     input:
       tuple val(chr), file(input_vcf) from ( params.gen_qc_steps == 'WGS' ? vcf_normalised : Channel.empty() )
+      path(fam) from from ( params.fam != '' ? ploidy_guess_fam_ch : Channel.empty() )
 
     output:
       tuple val(chr), file("norm-filtered.vcf.gz") into vcf_wgs_qced
@@ -336,29 +341,38 @@ process WgsQC {
       // Explanation: This is better than rewriting the user-supplied .fam file with sex information since it makes sure that mismatched samples or mismatched reported sex do not bias the custom vcf filter.
       // Explanation: This is better as it is now, since the custom_vcf_filter is able to do its job better (with appropriate cut-off values).
       // However, it should not affect things here too much as the genotypes of x-chromosomes are merely used for sex-check at this point.
-      if (chr in ["X", "Y", "chrX", "chrY", "23"])
-      """
-      bcftools +setGT ${input_vcf} -- -t q -i 'GT="0"|GT="0/."|GT="./0"|GT="0|."|GT=".|0"' -n c:'0/0' \
-      | bcftools +setGT -Oz -o fixed_partial_missingness.vcf.gz -- -t q -i 'GT="1"|GT="1/."|GT="./1"|GT="1|."|GT=".|1"' -n c:'1/1'
+      if (chr in ["X", "Y", "chrX", "chrY", "23", "24"] & params.fam != '')
+        """
+        python3 $baseDir/bin/custom_vcf_filter.py --input ${input_vcf} --output norm \
+        | tee custom_vcf_filter.log
 
-      python3 $baseDir/bin/custom_vcf_filter.py --input fixed_partial_missingness.vcf.gz \
-      --hardy_weinberg_equilibrium 0 --call_rate 0.5 --output norm \
-      | tee custom_vcf_filter.log
+        awk 'BEGIN{FS=" "; OFS=","}{ gsub("1", "M", $5) ; gsub("2", "F", $5); print $1,$5}' > "sex_file.txt"
 
-      python3 $baseDir/bin/print_WGS_VCF_filter_overview.py \
+        python3 !baseDir/bin/print_WGS_VCF_filter_overview.py \
+        --workdir . --chr !{chr} --sex "sex_file.txt" \
+        --vcf_file_format "norm.vcf.gz"
+
+        """
+      if else (chr in ["X", "Y", "chrX", "chrY", "23", "24"])
+        """
+        python3 $baseDir/bin/custom_vcf_filter.py --input fixed_partial_missingness.vcf.gz \
+        --output norm --hardy_weinberg_equilibrium 0 \
+        | tee custom_vcf_filter.log
+
+        python3 $baseDir/bin/print_WGS_VCF_filter_overview.py \
+          --workdir . --chr ${chr} \
+          --vcf_file_format "norm.vcf.gz"
+        """
+      else
+        """
+        python3 $baseDir/bin/custom_vcf_filter.py --input ${input_vcf} --output norm \
+        | tee custom_vcf_filter.log
+
+        python3 $baseDir/bin/print_WGS_VCF_filter_overview.py \
         --workdir . --chr ${chr} \
         --vcf_file_format "norm.vcf.gz"
-      """
-      else
-      """
-      python3 $baseDir/bin/custom_vcf_filter.py --input ${input_vcf} --output norm \
-      | tee custom_vcf_filter.log
-      
-      python3 $baseDir/bin/print_WGS_VCF_filter_overview.py \
-        --workdir .  --chr ${chr} \
-        --vcf_file_format "norm.vcf.gz"
 
-      """
+        """
 }
 
 // WGS
