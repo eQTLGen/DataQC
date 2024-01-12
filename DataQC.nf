@@ -102,6 +102,7 @@ if (params.fam != '') {
 
   Channel
     .fromPath(params.fam, checkIfExists: true)
+    .collect()
     .set { ploidy_guess_fam_ch }
 
 } else {
@@ -257,7 +258,6 @@ process ListChromosomes {
 vcf_chromosome_list_file.splitText().map{ line -> line.trim() }.view().set { chromosome_channel }
 
 process SplitVcf {
-    cache 'lenient'
     tag {SplitVcf}
 
     input:
@@ -271,6 +271,7 @@ process SplitVcf {
 
     script:
       """
+      # Splitting vcf file
       bcftools view ${input_vcf} -r ${chr} -Oz -o "split_${chr}.vcf.gz"
       """
 }
@@ -296,7 +297,6 @@ process ExpandVcfChannel {
 }
 
 process WgsNorm {
-    cache 'lenient'
     tag "$chr"
 
     input:
@@ -315,7 +315,6 @@ process WgsNorm {
 }
 
 process WgsQC {
-    cache 'lenient'
     tag "$chr"
     container 'quay.io/cawarmerdam/eqtlgen_wgs_qc:v0.1'
 
@@ -343,32 +342,32 @@ process WgsQC {
       // However, it should not affect things here too much as the genotypes of x-chromosomes are merely used for sex-check at this point.
       if (chr in ["X", "Y", "chrX", "chrY", "23", "24"] & params.fam != '')
         '''
-        python3 !baseDir/bin/custom_vcf_filter.py --input !{input_vcf} --output norm \
+        awk 'BEGIN{FS=" "; OFS=","}{ gsub("1", "M", $5) ; gsub("2", "F", $5); print $2,$5}' !{fam} > "sex_file.txt"
+
+        python3 !{baseDir}/bin/custom_vcf_filter.py --input !{input_vcf} --output norm --sex "sex_file.txt" \
         | tee custom_vcf_filter.log
 
-        awk 'BEGIN{FS=" "; OFS=","}{ gsub("1", "M", $5) ; gsub("2", "F", $5); print $1,$5}' > "sex_file.txt"
-
-        python3 !baseDir/bin/print_WGS_VCF_filter_overview.py \
-        --workdir . --chr !{chr} --sex "sex_file.txt" \
+        python3 !{baseDir}/bin/print_WGS_VCF_filter_overview.py \
+        --workdir . --chr !{chr} \
         --vcf_file_format "norm.vcf.gz"
 
         '''
       else if (chr in ["X", "Y", "chrX", "chrY", "23", "24"])
         '''
-        python3 !baseDir/bin/custom_vcf_filter.py --input !{input_vcf} \
+        python3 !{baseDir}/bin/custom_vcf_filter.py --input !{input_vcf} \
         --output norm --hardy_weinberg_equilibrium 0 \
         | tee custom_vcf_filter.log
 
-        python3 !baseDir/bin/print_WGS_VCF_filter_overview.py \
+        python3 !{baseDir}/bin/print_WGS_VCF_filter_overview.py \
           --workdir . --chr !{chr} \
           --vcf_file_format "norm.vcf.gz"
         '''
       else
         '''
-        python3 !baseDir/bin/custom_vcf_filter.py --input !{input_vcf} --output norm \
+        python3 !{baseDir}/bin/custom_vcf_filter.py --input !{input_vcf} --output norm \
         | tee custom_vcf_filter.log
 
-        python3 !baseDir/bin/print_WGS_VCF_filter_overview.py \
+        python3 !{baseDir}/bin/print_WGS_VCF_filter_overview.py \
         --workdir . --chr !{chr} \
         --vcf_file_format "norm.vcf.gz"
 
@@ -424,7 +423,7 @@ process CleanSplitVcf {
 
     script:
     """
-    clean_work_files.sh "${files_list}"
+    #clean_work_files.sh "${files_list}"
     """
 }
 
@@ -439,7 +438,7 @@ process CleanWgsNorm {
 
     script:
     """
-    clean_work_files.sh "${files_list}"
+    #clean_work_files.sh "${files_list}"
     """
 }
 
@@ -454,7 +453,7 @@ process CleanWgsQc {
 
     script:
     """
-    clean_work_files.sh "${files_list}"
+    #clean_work_files.sh "${files_list}"
     """
 }
 
