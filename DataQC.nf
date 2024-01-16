@@ -345,6 +345,7 @@ process WgsQC {
         awk 'BEGIN{FS=" "; OFS=","}{ gsub("1", "M", $5) ; gsub("2", "F", $5); print $2,$5}' !{fam} > "sex_file.txt"
 
         python3 !{baseDir}/bin/custom_vcf_filter.py --input !{input_vcf} --output norm --sex "sex_file.txt" \
+        --replace_poor_quality_genotypes \
         | tee custom_vcf_filter.log
 
         python3 !{baseDir}/bin/print_WGS_VCF_filter_overview.py \
@@ -355,7 +356,7 @@ process WgsQC {
       else if (chr in ["X", "Y", "chrX", "chrY", "23", "24"])
         '''
         python3 !{baseDir}/bin/custom_vcf_filter.py --input !{input_vcf} \
-        --output norm --hardy_weinberg_equilibrium 0 \
+        --output norm --hardy_weinberg_equilibrium 0 --replace_poor_quality_genotypes \
         | tee custom_vcf_filter.log
 
         python3 !{baseDir}/bin/print_WGS_VCF_filter_overview.py \
@@ -365,6 +366,7 @@ process WgsQC {
       else
         '''
         python3 !{baseDir}/bin/custom_vcf_filter.py --input !{input_vcf} --output norm \
+        --replace_poor_quality_genotypes \
         | tee custom_vcf_filter.log
 
         python3 !{baseDir}/bin/print_WGS_VCF_filter_overview.py \
