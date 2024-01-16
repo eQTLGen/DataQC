@@ -317,6 +317,9 @@ process WgsNorm {
 process WgsQC {
     tag "$chr"
     container 'quay.io/cawarmerdam/eqtlgen_wgs_qc:v0.1'
+    publishDir "${params.outdir}", mode: 'copy', overwrite: true, pattern: 'norm-filtered.log.gz', saveAs: "custom_wgs_qc/norm-filtered_${chr}.log.gz"
+    publishDir "${params.outdir}", mode: 'copy', overwrite: true, pattern: 'VCFFilterSummaryStats.txt', saveAs: "custom_wgs_qc/VCFFilterSummaryStats_${chr}.txt"
+    publishDir "${params.outdir}", mode: 'copy', overwrite: true, pattern: 'VCFFilterSettings.txt', saveAs: "custom_wgs_qc/VCFFilterSettings_${chr}.txt"
 
     input:
       tuple val(chr), file(input_vcf) from ( params.gen_qc_steps == 'WGS' ? vcf_normalised : Channel.empty() )
