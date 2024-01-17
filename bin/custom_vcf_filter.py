@@ -228,7 +228,7 @@ class main():
         fh = gzip.open(self.input_path, 'rt')
         fho = gzip.open(self.output_filename + "-filtered.vcf.gz", 'wt')
         fhlog = gzip.open(self.output_filename + "-filtered.log.gz", 'wt')
-        fhlog.write("Id\tReason\tStats\n")
+        fhlog.write("Id\tReason\tPreFilterStats\tPostFilterStats\n")
 
         sample_mask = []
         sample_male_mask = []
@@ -345,7 +345,7 @@ class main():
 
         # check if this is a multiAllelic
         if self.remove_multiallelic and len(alt) > 1:
-            return [line_number, False, logid + "\tMultiAllelic\t-\n"]
+            return [line_number, False, logid + "\tMultiAllelic\t-\t-\n"]
 
         # check if this variant is an indel
         is_indel = False
@@ -362,15 +362,15 @@ class main():
         if is_indel:
             if filter.startswith("VQSR") and self.check_vqsr_indel:
                 if not self.parse_vqsr(filter, is_indel):
-                    return [line_number, False, logid + "\tIndelBelowVQSR\t-\n"]
+                    return [line_number, False, logid + "\tIndelBelowVQSR\t-\t-\n"]
             elif self.remove_non_pass_indel and filter != "PASS":
-                return [line_number, False, logid + "\tIndelNonPass\t-\n"]
+                return [line_number, False, logid + "\tIndelNonPass\t-\t-\n"]
         else:
             if filter.startswith("VQSR") and self.check_vqsr_snv:
                 if not self.parse_vqsr(filter, is_indel):
-                    return [line_number, False, logid + "\tSNVBelowVQSR\t-\n"]
+                    return [line_number, False, logid + "\tSNVBelowVQSR\t-\t-\n"]
             elif self.remove_non_pass_snv and filter != "PASS":
-                return [line_number, False, logid + "\tSNVNonPass\t-\n"]
+                return [line_number, False, logid + "\tSNVNonPass\t-\t-\n"]
 
         # parse info string
         infoelems = elems[7].split(";")
@@ -381,10 +381,10 @@ class main():
                 value = vals[1]
                 if key == "InbreedingCoeff":
                     if value == ".":
-                        return [line_number, False, logid + "\tIncorrectInbreedingCoeff:" + value + "\t-\n"]
+                        return [line_number, False, logid + "\tIncorrectInbreedingCoeff:" + value + "\t-\t-\n"]
                     valuef = float(value)
                     if valuef < self.thresh_ib:
-                        return [line_number, False, logid + "\tBelowInbreedingCoeff:" + value + "\t-\n"]
+                        return [line_number, False, logid + "\tBelowInbreedingCoeff:" + value + "\t-\t-\n"]
             # other filters based on info column can be implemented here...
 
         # parse genotypes
@@ -422,7 +422,7 @@ class main():
 
         # only continue if there are genotypes to parse
         if gtcol < 0:
-            return [line_number, False, logid + "\tNoGTCol\t-\n"]
+            return [line_number, False, logid + "\tNoGTCol\t-\t-\n"]
 
         # get current dosages
         # store split columns temporarily
@@ -462,7 +462,7 @@ class main():
             chr=chr
         )
         if not stats[0]:
-            return [line_number, False, logid + "\tFailedPrefilterVarStats\t" + stats[1] + "\n"]
+            return [line_number, False, logid + "\tFailedPrefilterVarStats\t-\t" + stats[1] + "\n"]
 
         # check whether variant becomes monomorphic after filtering poor calls
         # iterate samples
@@ -590,7 +590,7 @@ class main():
         )
 
         if maf_postfilter == 0:
-            logoutln = "{}\tMonomorphicPostFilter\t{};NrGenosReplaced:{}" \
+            logoutln = "{}\tMonomorphicPostFilter\t-\t{};NrGenosReplaced:{}" \
                        ";PoorDP:{};AvgDP:{:.2f} ({} calls);PoorGQ:{}" \
                        ";PoorABHomA:{};PoorABHomB:{};PoorABHet:{}" \
                        "\n".format(logid,
@@ -628,9 +628,9 @@ class main():
 
         var_ok = stats_post_filter[0]
         if var_ok:
-            return [line_number, True, logid + "\tPASSQC\tPreFilterStats:" + stats[1]+"\tPostFilterStats:" + stats_post_filter[1] + "\n", outln]
+            return [line_number, True, logid + "\tPASSQC\t" + stats[1] + "\t" + stats_post_filter[1] + "\n", outln]
         else:
-            return [line_number, False, logid + "\tFailQCPostFilter\tPreFilterStats:" + stats[1]+"\tPostFilterStats:" + stats_post_filter[1] + "\n", outln]
+            return [line_number, False, logid + "\tFailQCPostFilter\t" + stats[1] + "\t" + stats_post_filter[1] + "\n", outln]
 
     def parse_vqsr(self, vqsrstring, is_indel):
         if not vqsrstring.startswith("VQSR"):
@@ -784,7 +784,7 @@ class main():
         print("  > Remove multiallelic: {}".format(self.remove_multiallelic))
         print("  > Remove non-PASS SNV: {}".format(self.remove_non_pass_snv))
         print("  > Remove non-PASS Indel: {}".format(self.remove_non_pass_indel))
-        print("  > Remove low complexity: {}".format(self.filer_low_complexity))
+        print("  > Remove low complexity: {}".format(self.remove_low_complexity))
         print("  > Strip INFO column: {}".format(self.strip_info_col))
         print("  > Ignore homozygous reference stats: {}".format(self.ignore_homref_stats))
         print("  > Replace poor quality genotype calls with missing: {}".format(self.replace_poor_quality_genotypes))

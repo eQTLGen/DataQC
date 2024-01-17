@@ -252,8 +252,11 @@ class main():
 
         try:
             with gzip.open(filepath, 'rt') as f:
-                for line in f:
-                    (_, reason, stats) = line.split("\t")
+                for line_index,line in enumerate(f):
+                    if len(line.split("\t")) != 4:
+                        print(line)
+                        print(line_index)
+                    (_, reason, stats_pre_filter, stats) = line.split("\t")
                     if reason == "MultiAllelic":
                         multi_allelic += 1
                     elif reason == "IndelBelowVQSR":
