@@ -245,9 +245,11 @@ class main():
         below_inbreeding_coeff = 0
         no_gt_col = 0
         failed_pre_filter_var_stats = 0
+        fail_qc_post_filter = 0
         n_failed_cr = 0
         n_failed_maf = 0
         n_failed_hwe = 0
+        monomorphic_post_filter = 0
         pass_qc = 0
 
         try:
@@ -256,7 +258,7 @@ class main():
                     if len(line.split("\t")) != 4:
                         print(line)
                         print(line_index)
-                    (_, reason, stats_pre_filter, stats) = line.split("\t")
+                    (_, reason, stats_pre_filter, stats_post_filter) = line.split("\t")
                     if reason == "MultiAllelic":
                         multi_allelic += 1
                     elif reason == "IndelBelowVQSR":
@@ -276,7 +278,7 @@ class main():
                     elif reason == "FailedPrefilterVarStats":
                         failed_pre_filter_var_stats += 1
 
-                        splitted_stats = stats.split(";")
+                        splitted_stats = stats_pre_filter.split(";")
                         cr = float(splitted_stats[0].replace("CR=", ""))
                         maf = float(splitted_stats[1].replace("MAF=", ""))
                         hwe = float(splitted_stats[2].replace("HWE=", ""))
@@ -287,6 +289,22 @@ class main():
                             n_failed_maf += 1
                         if hwe != -1 and hwe <= thresh_hwe:
                             n_failed_hwe += 1
+                    elif reason == "FailQCPostFilter":
+                        fail_qc_post_filter += 1
+
+                        splitted_stats = stats_post_filter.split(";")
+                        cr = float(splitted_stats[0].replace("CR=", ""))
+                        maf = float(splitted_stats[1].replace("MAF=", ""))
+                        hwe = float(splitted_stats[2].replace("HWE=", ""))
+
+                        if cr <= thresh_cr:
+                            n_failed_cr += 1
+                        if maf <= thresh_maf:
+                            n_failed_maf += 1
+                        if hwe != -1 and hwe <= thresh_hwe:
+                            n_failed_hwe += 1
+                    elif reason == "MonomorphicPostFilter":
+                        monomorphic_post_filter += 1
                     elif reason == "PASSQC":
                         pass_qc += 1
                     else:

@@ -462,7 +462,7 @@ class main():
             chr=chr
         )
         if not stats[0]:
-            return [line_number, False, logid + "\tFailedPrefilterVarStats\t-\t" + stats[1] + "\n"]
+            return [line_number, False, logid + "\tFailedPrefilterVarStats\t" + stats[1] + "\t-\n"]
 
         # check whether variant becomes monomorphic after filtering poor calls
         # iterate samples
