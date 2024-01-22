@@ -157,7 +157,7 @@ class main():
 
         data.append(row)
 
-        df = pd.DataFrame(data, columns=["Chromosome", "Started", "MultiAllelic", "IndelBelowVQSR", "IndelNonPass", "SNVBelowVQSR", "SNVNonPass", "IncorrectInbreedingCoeff", "BelowInbreedingCoeff", "NoGTCol", "FailedPrefilterVarStats", "FailedCR", "FailedMAF", "FailedHWE", "PASSQC", "Parsed", "Written", "PctKept", "Finished", "Elapsed"])
+        df = pd.DataFrame(data, columns=["Chromosome", "Started", "MultiAllelic", "IndelBelowVQSR", "IndelNonPass", "SNVBelowVQSR", "SNVNonPass", "IncorrectInbreedingCoeff", "BelowInbreedingCoeff", "NoGTCol", "FailedPrefilterVarStats", "FailQCPostFilter", "FailedCR", "FailedMAF", "FailedHWE", "MonomorphicPostFilter", "PASSQC", "Parsed", "Written", "PctKept", "Finished", "Elapsed"])
         df.iloc[:, 2:17] = df.iloc[:, 2:17].astype(int)
 
         self.save_file(
