@@ -315,8 +315,8 @@ class main():
 
         return [multi_allelic, indel_below_vqsr, indel_non_pass,
                 snv_below_vqsr, snv_non_pass, incorrect_inbreeding_coeff,
-                below_inbreeding_coeff, no_gt_col, failed_pre_filter_var_stats,
-                n_failed_cr, n_failed_maf, n_failed_hwe, pass_qc]
+                below_inbreeding_coeff, no_gt_col, failed_pre_filter_var_stats, fail_qc_post_filter,
+                n_failed_cr, n_failed_maf, n_failed_hwe, monomorphic_post_filter, pass_qc]
 
     @staticmethod
     def save_file(df, outpath, header=True, index=False, sep=","):
