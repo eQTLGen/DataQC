@@ -164,6 +164,7 @@ params.GenSdThresh = 3
 params.ExpSdThresh = 4
 params.ContaminationSlope = 45
 params.ContaminationArea = 30
+params.XyExpressionRatio = 'fixed'
 params.exp_platform = ''
 params.cohort_name = ''
 params.outdir = ''
@@ -504,6 +505,7 @@ process GeneExpressionQC {
       file geno_filter from sample_qc
       val exp_platform from params.exp_platform
       val sd from params.ExpSdThresh
+      val xy_expression_ratio from params.XyExpressionRatio
       val contamination_area from params.ContaminationArea
       val contamination_slope from params.ContaminationSlope
 
@@ -512,6 +514,7 @@ process GeneExpressionQC {
       file 'SexCheck.txt' into sexcheck_to_report
 
     script:
+      xy_expression_ratio_param = (xy_expression_ratio == "free" ? "--do-not-fix-ratio", "")
       if (exp_platform == 'HT12v3')
       """
       Rscript --vanilla $baseDir/bin/ProcessExpression.R  \
@@ -523,6 +526,7 @@ process GeneExpressionQC {
       --sd ${sd} \
       --contamination_slope ${contamination_slope} \
       --contamination_area ${contamination_area} \
+      ${xy_expression_ratio_param} \
       --emp_probe_mapping $baseDir/data/EmpiricalProbeMatching_IlluminaHT12v3.txt \
       --output outputfolder_exp
       """
@@ -536,6 +540,7 @@ process GeneExpressionQC {
       --platform ${exp_platform} \
       --contamination_slope ${contamination_slope} \
       --contamination_area ${contamination_area} \
+      ${xy_expression_ratio_param} \
       --emp_probe_mapping $baseDir/data/EmpiricalProbeMatching_IlluminaHT12v4.txt \
       --output outputfolder_exp
       """
@@ -549,6 +554,7 @@ process GeneExpressionQC {
       --platform ${exp_platform} \
       --contamination_slope ${contamination_slope} \
       --contamination_area ${contamination_area} \
+      ${xy_expression_ratio_param} \
       --emp_probe_mapping $baseDir/data/EmpiricalProbeMatching_IlluminaHuRef8.txt \
       --output outputfolder_exp
       """
@@ -562,6 +568,7 @@ process GeneExpressionQC {
       --platform ${exp_platform} \
       --contamination_slope ${contamination_slope} \
       --contamination_area ${contamination_area} \
+      ${xy_expression_ratio_param} \
       --emp_probe_mapping $baseDir/data/EmpiricalProbeMatching_RNAseq.txt \
       --output outputfolder_exp
       """
@@ -575,6 +582,7 @@ process GeneExpressionQC {
       --platform ${exp_platform} \
       --contamination_slope ${contamination_slope} \
       --contamination_area ${contamination_area} \
+      ${xy_expression_ratio_param} \
       --emp_probe_mapping $baseDir/data/EmpiricalProbeMatching_AffyU219.txt \
       --output outputfolder_exp
       """
@@ -588,6 +596,7 @@ process GeneExpressionQC {
       --platform ${exp_platform} \
       --contamination_slope ${contamination_slope} \
       --contamination_area ${contamination_area} \
+      ${xy_expression_ratio_param} \
       --emp_probe_mapping $baseDir/data/EmpiricalProbeMatching_AffyHumanExon.txt \
       --output outputfolder_exp
       """
@@ -601,6 +610,7 @@ process GeneExpressionQC {
       --platform ${exp_platform} \
       --contamination_slope ${contamination_slope} \
       --contamination_area ${contamination_area} \
+      ${xy_expression_ratio_param} \
       --emp_probe_mapping $baseDir/data/HgncToEnsemblProbeMatching.txt \
       --output outputfolder_exp
       """
