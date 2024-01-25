@@ -25,7 +25,7 @@ option_list <- list(
     help = "Area that marks likely contaminated samples based on sex-chromosome gene expression. Must be an angle between 0 and 90. The angle represents the total area around the y = x function."),
     make_option(c("-a", "--contamination_slope"), type = "double", default = 45,
     help = "Angle that is used to discriminate based on expression inferred sex. Increase to make it less steep, decrease to make it steeper"),
-    make_option(c("-F", "--do-not-fix-ratio"), action = "store_false", dest = "fix_ratio",
+    make_option(c("-F", "--do-not-fix-ratio"), action = "store_false", dest = "fixed_ratio", default = TRUE,
     help = "If used, will recalibrate contamination slope and contamination area to the ratio of max y gene expression to max xist gene expression."),
     make_option(c("-i", "--sex_info"), type = "character",
     help = "File with sex information. Plink2 --check-sex filtered output."),
@@ -600,11 +600,13 @@ ExpressionBasedSampleSwapIdentification <- function(and, summary_table) {
 
     y_genes <- merge(y_genes, geno_fam_f, by = "sample")
     max_exp <- max(y_genes$y_genes, y_genes$xist)
+    print(sprintf("Fixed ratio: %s", args$fixed_ratio))
     rescaled_ratio <- ifelse(args$fixed_ratio, 1, max(y_genes$y_genes) / max(y_genes$xist))
+    print(sprintf("Derived ratio: %s", rescaled_ratio))
 
     lower_slope <- tan((args$contamination_slope - args$contamination_area / 2) / 180*pi) * rescaled_ratio
     upper_slope <- tan((args$contamination_slope + args$contamination_area / 2) / 180*pi) * rescaled_ratio
-    middle_slope <- tan(args$contamination_slope / 180*pi)
+    middle_slope <- tan(args$contamination_slope / 180*pi) * rescaled_ratio
 
     y_genes$expressionSexNaive <- case_when(
       y_genes$y_genes > y_genes$xist * middle_slope ~ 1,
