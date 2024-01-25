@@ -669,7 +669,7 @@ process RenderReport {
     S = ${stresh},
     SD = ${sdtresh},
     SD_exp = ${expsdtresh},
-    ContRatio = ${xy_expression_ratio},
+    ContRatio = "${xy_expression_ratio}",
     Cont = ${contaminationarea},
     ContSlope = ${contaminationslope}))'
     """
