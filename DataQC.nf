@@ -514,7 +514,7 @@ process GeneExpressionQC {
       file 'SexCheck.txt' into sexcheck_to_report
 
     script:
-      xy_expression_ratio_param = (xy_expression_ratio == "free" ? "--do-not-fix-ratio", "")
+      xy_expression_ratio_param = (xy_expression_ratio == "free") ? "--do-not-fix-ratio" : ""
       if (exp_platform == 'HT12v3')
       """
       Rscript --vanilla $baseDir/bin/ProcessExpression.R  \
