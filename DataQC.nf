@@ -316,7 +316,6 @@ process WgsNorm {
 
 process WgsQC {
     tag "$chr"
-    container 'quay.io/cawarmerdam/eqtlgen_wgs_qc:v0.1'
     publishDir "${params.outdir}", mode: 'copy', overwrite: true, pattern: 'norm-filtered.log.gz', saveAs: { filename -> "custom_wgs_qc/norm-filtered_${chr}.log.gz" }
     publishDir "${params.outdir}", mode: 'copy', overwrite: true, pattern: 'VCFFilterSummaryStats.txt', saveAs: { filename -> "custom_wgs_qc/VCFFilterSummaryStats_${chr}.txt" }
     publishDir "${params.outdir}", mode: 'copy', overwrite: true, pattern: 'VCFFilterSettings.txt', saveAs: { filename -> "custom_wgs_qc/VCFFilterSettings_${chr}.txt" }
