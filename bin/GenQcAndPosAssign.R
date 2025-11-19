@@ -317,7 +317,7 @@ if (is.null(PLINK2) || PLINK2 == "" || !file.exists(PLINK2)) {
   dir.create("plink")
 
   # Download plink 2 executable
-  utils::download.file("https://s3.amazonaws.com/plink2-assets/alpha3/plink2_linux_x86_64_20221024.zip",
+  utils::download.file("https://s3.amazonaws.com/plink2-assets/plink2_linux_x86_64_20251115.zip",
                        destfile = "plink/plink2.zip", verbose = TRUE)
   PLINK2 <- utils::unzip("plink/plink2.zip",
                         files = "plink2",
@@ -406,9 +406,21 @@ system(paste0(PLINK2, " --bfile ", bed_simplepath, " --threads 4 --freq 'cols=+p
 system("gzip target.afreq --force")
 
 # eQTL samples
-gte <- fread(args$gen_exp, sep = "\t", header = FALSE,
+
+if(args$gen_exp == "NA"){
+	gte <- as.data.table(data.frame(V1 = target_bed$.fam$`sample.ID`))
+} else {
+	gte <- fread(args$gen_exp, sep = "\t", header = FALSE,
              keepLeadingZeros = TRUE,
              colClasses = "character")
+}
+
+print(target_bed$ncol)
+print(target_bed$nrow)
+print(nrow(gte[gte$V1 %in% target_bed$.fam$`sample.ID`, ]))
+
+
+print(str(gte))
 
 summary_table <- data.frame(stage = "Raw file", Nr_of_SNPs = target_bed$ncol, Nr_of_samples = target_bed$nrow,
 Nr_of_eQTL_samples = nrow(gte[gte$V1 %in% target_bed$.fam$`sample.ID`, ]))

@@ -52,10 +52,10 @@ Or just download this from the gitlab/github download link and unzip.
 - Unimputed genotype file in plink `.bed` format (https://www.cog-genomics.org/plink/1.9/input#bed). Genome build has to be in **hg19/GRCh37 (default)** or **hg38/GRCh38**. It is advisable that .fam file also includes observed sex for all samples (format: males=1, females=2), so that pipeline does extra check on that. However, if this information is not available for all samples, pipeline just skips this check. Input path has to be without `.bed/.bim/.fam` extension. 
 - We also allow unimputed `.vcf` datasets as input, specifically for WGS datasets for which we can do WGS-specific variant level QC. If your dataset concerns a VCF dataset, replace the `--bfile` argument with the `--vcf` argument. The `--vcf` argument expects a full path to a `.vcf` dataset. Pathname extension using globbing is allowed (using `*` or `?`), but the path should be provided without pathway extension.
 - Raw, unprocessed gene expression matrix. Tab-delimited file, genes/probes in the rows, samples in the columns.
-    - First column has header "-".
-    - For Illumina arrays, probe ID has to be Illumina ArrayAddress.
-    - For RNA-seq, gene ID has to be stable ENSEMBL gene ID (ENSEMBL v75).
-    - For Affymetrix arrays we expect that gene **expression matrix has already gone through the standard preprocessing** and is in the same format as was used in eQTLGen phase 1 analyses (incl. array probe names).
+  - First column has header "-".
+  - For Illumina arrays, probe ID has to be Illumina ArrayAddress.
+  - For RNA-seq, gene ID has to be stable ENSEMBL gene ID (ENSEMBL v75).
+  - For Affymetrix arrays we expect that gene **expression matrix has already gone through the standard preprocessing** and is in the same format as was used in eQTLGen phase 1 analyses (incl. array probe names).
 - Genotype-to-expression linking file (gte). Tab-delimited file, no header, 2 columns: sample ID in genotype data, corresponding sample ID in gene expression data.
 
 ### Required inputs
@@ -73,7 +73,7 @@ Or just download this from the gitlab/github download link and unzip.
 `--exp_platform`                Gene expression platform. HT12v3, HT12v4, HuRef8, RNAseq, AffyU219, AffyHumanExon.
 
 `--outdir`                      Path to the output directory.
-    
+
 ### Additional settings
 
 There are five arguments which can be used to adjust certain outlier detection thresholds. These should be adjusted after initial run with the default settings and after investigating the diagnostic plots in the `Report_DataQc_[cohort name].html`. Then the pipeline should be re-run with adjusted settings.
@@ -202,7 +202,6 @@ Then submit the job `sbatch submit_DataQc_[**CohortName_PlatformName**].sh`. Thi
   - `.command.log`: log file for seeing the analysis outputs/errors.
   - `.command.err`: file which lists the errors, if any.
 
-
 ### Output
 
 Pipeline makes the following output (most relevant files outlined):
@@ -251,12 +250,15 @@ When all issues are solved:
 3. Files: `output/outputfolder_gen/gen_data_QCd/*_ToImputation.bed`, `output/outputfolder_gen/gen_data_QCd/*_ToImputation.bim`, `output/outputfolder_gen/gen_data_QCd/*_ToImputation.fam` are the filtered and QCd genotype files which need to be the input for imputation pipeline `https://gitlab.com/eqtlgen-group/eqtlgen-imputation-pipeline`
 
 4. The whole folder `output` should be specified as an input for per-cohort preparations and encoding pipeline `https://gitlab.com/eqtlgen-group/PerCohortPreparations`. This pipeline automatically uses the processed, QCd expression data and covariate file to run data encoding and partial derivative calculation. It then organises the encoded matrices for sharig with central site. It also extracts some QC files for sharing with the central site:
-
 - `output/Report_DataQc_[cohort name].html`: most important data QC report, used in central site to check the per-cohort QC information.
 - `output/outputfolder_exp/exp_data_summary/raw_gene_summary.txt`: gene expression summary statistics (mean, median, sd, min, max, nr of unique values, Shapiro test P) before normalisation, used in central site to filter out lowly expressed genes, genes having outliers, etc.
 - `output/outputfolder_exp/exp_data_summary/processed_gene_summary.txt`: gene expression summary statistics (mean, median, sd, min, max, nr of unique values, Shapiro test P) after normalisation, used in central site to filter out lowly expressed genes, genes having outliers, etc.
 - `output/outputfolder_gen/plots/*`, `output/outputfolder_exp/plots/*`: Separate diagnostic plots which can be later used in the manuscript materials.
 - `output/pipeline_info/DataQc_report.html`: Technical pipeline runtime report, used for checking if pipeline finished successfully.. It is not automatically added to shared folder, however it can be used in the central site for debugging, if the need arises. 
+
+## Genotype QC only
+
+To simply only do genotype QC without the expression QC use `DataQCgenoOnly.nf`
 
 ## Acknowledgements
 
